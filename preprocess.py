@@ -72,8 +72,6 @@ OSM_POSTFIX: dict[str, list[tuple[str, str]]] = {
     "swamp": [("swamp", '|layername=multipolygons')],
 }
 
-pool = multiprocessing.Pool(processes=10)
-
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
@@ -95,11 +93,11 @@ def osm_convert_and_postfix(name: str):
     run_subprocess(name, [OSMFILTER_PATH, output_osm,
                           '--verbose', *OSM_FILTER_CONDITON[name],
                           f'-o={osm_file}'])
-    for c in OSM_POSTFIX[name]:
-        o = processing.run("native:fixgeometries", {
-            'INPUT': osm_file + c[1],
-            'OUTPUT': os.path.join(OSM_FOLDER, c[0]+".shp")})
-        logging.info(f'[{c[0]}/{c[1]}]' + o)
+    # for c in OSM_POSTFIX[name]:
+    #     o = processing.run("native:fixgeometries", {
+    #         'INPUT': osm_file + c[1],
+    #         'OUTPUT': os.path.join(OSM_FOLDER, c[0]+".shp")})
+    #     logging.info(f'[{c[0]}/{c[1]}]' + o)
 
 
 def osm_preprocess():
@@ -138,11 +136,13 @@ def osm_preprocess():
 def osm_filter():
     # filter the osm
     logging.info("===== Filter OSM =====")
+    pool = multiprocessing.Pool(processes=10)
     for name in OSM_FILTER_CONDITON:
-        pool.apply_async(osm_convert_and_postfix, (name,))
+        pool.apply_async(osm_convert_and_postfix, args=(name,))
     pool.close()
     pool.join()
 
 
-osm_preprocess()
+# osm_preprocess()
+osm_filter()
 qgs.exitQgis()
