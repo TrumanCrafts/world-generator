@@ -24,6 +24,6 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v2
       with:
-        context: .
+        context: ./Docker
         push: true
         tags: alicespaceli/trumancrafts_builder:latest
