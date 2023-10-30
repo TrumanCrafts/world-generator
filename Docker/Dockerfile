@@ -28,8 +28,8 @@ RUN apt update && apt install -y \
     && apt update \
     && apt install -y qgis qgis-plugin-grass\
     # install worldpainter
-    && wget -O /tmp https://www.worldpainter.net/files/worldpainter_2.21.0.deb \
-    && dpkg -i /tmp/worldpainter_2.21.0.deb \
+    && wget -O /tmp/worldpainter_2.21.0.deb https://www.worldpainter.net/files/worldpainter_2.21.0.deb \
+    && dpkg -i -y /tmp/worldpainter_2.21.0.deb \
     && rm /tmp/worldpainter_2.21.0.deb \
     && mkdir -p /root/.local/share/worldpainter/ \
     # install Minutor
