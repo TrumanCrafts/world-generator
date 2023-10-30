@@ -12,8 +12,8 @@ RUN apt update && apt install -y \
     python3-setuptools \
     python3-wheel \
     python3-venv \
-    # install openjdk-11
-    openjdk-11-jdk \
+    # install openjdk-17
+    openjdk-17-jdk \
     axel \
     # install QGIS and imagemagick
     && apt install -y xvfb imagemagick gnupg software-properties-common\
