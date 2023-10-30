@@ -1,7 +1,7 @@
 FROM debian:bookworm
 
 RUN apt update && apt install -y \
-    git wget dpkg\
+    git wget dpkg unzip axel\
     gcc zlib1g-dev\
     build-essential \
     libssl-dev \
@@ -14,9 +14,11 @@ RUN apt update && apt install -y \
     python3-venv \
     # install openjdk-17
     openjdk-17-jdk \
-    axel xserver-xorg\
-    # install QGIS and imagemagick
-    && apt install -y xvfb imagemagick gnupg software-properties-common\
+    xserver-xorg xorg xvfb\
+    # imagemagick
+    libpng-dev libjpeg-dev libtiff-dev imagemagick\
+    # install QGIS 
+    gnupg software-properties-common\
     && mkdir -m755 -p /etc/apt/keyrings \
     && wget -O /etc/apt/keyrings/qgis-archive-keyring.gpg https://download.qgis.org/downloads/qgis-archive-keyring.gpg \
     && echo 'Types: deb deb-src' >> /etc/apt/sources.list.d/qgis.sources \
