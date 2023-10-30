@@ -14,7 +14,7 @@ RUN apt update && apt install -y \
     python3-venv \
     # install openjdk-17
     openjdk-17-jdk \
-    axel \
+    axel xserver-xorg\
     # install QGIS and imagemagick
     && apt install -y xvfb imagemagick gnupg software-properties-common\
     && mkdir -m755 -p /etc/apt/keyrings \
