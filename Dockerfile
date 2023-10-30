@@ -20,10 +20,10 @@ RUN apt update && apt install -y \
     && mkdir -m755 -p /etc/apt/keyrings \
     && wget -O /etc/apt/keyrings/qgis-archive-keyring.gpg https://download.qgis.org/downloads/qgis-archive-keyring.gpg \
     && echo 'deb [arch=amd64] https://qgis.org/debian bookworm main' | tee /etc/apt/sources.list.d/qgis.sources \
-    && echo 'deb-src [arch=amd64] https://qgis.org/debian bookworm main' | sudo tee -a /etc/apt/sources.list.d/qgis.sources \
+    && echo 'deb-src [arch=amd64] https://qgis.org/debian bookworm main' | tee -a /etc/apt/sources.list.d/qgis.sources \
     && echo 'Signed-By: /etc/apt/keyrings/qgis-archive-keyring.gpg' | tee -a /etc/apt/sources.list.d/qgis.sources \
-    && apt-get update \
-    && apt-get install -y qgis qgis-plugin-grass\
+    && apt update \
+    && apt install -y qgis qgis-plugin-grass\
     # install worldpainter
     && wget -O /tmp https://www.worldpainter.net/files/worldpainter_2.21.0.deb \
     && dpkg -i /tmp/worldpainter_2.21.0.deb \
@@ -34,7 +34,7 @@ RUN apt update && apt install -y \
     && mv minutor /usr/bin/ \
     && rm /tmp/Minutor.Ubuntu-22.04.zip \
     # post cleanup
-    && apt-get clean \
+    && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
 CMD [ "bash" ]
