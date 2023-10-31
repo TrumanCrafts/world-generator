@@ -1,148 +1,119 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-import subprocess
+import osmium
 import os
-import logging
-import multiprocessing
-from qgis.core import QgsApplication, QgsProject
-import sys
-
-QgsApplication.setPrefixPath("/usr", True)
-qgs = QgsApplication([], False)
-qgs.initQgis()
-sys.path.append('/usr/share/qgis/python/plugins')
-
-from qgis import processing
-from processing.core.Processing import Processing
-Processing.initialize()
-
-project_path = '/mnt/Download/project/QGIS/MinecraftEarthTiles.qgz'
-project = QgsProject.instance()
-project.read(project_path)
+from config import CONFIG
 
 
-OSM_FOLDER = os.getenv("OSM_FOLDER", "./osm")
-OSMCONVERT_PATH = os.getenv("OSMCONVERT_PATH", "osmconvert")
-OSMFILTER_PATH = os.getenv("OSMFILTER_PATH", "osmfilter")
-PBF_PATH = os.getenv("PBF_PATH", "pbf")
-output_osm = os.path.join(OSM_FOLDER, "output.osm")
+class OSMPreprocessor(osmium.SimpleHandler):
+    def __init__(self, output_folder: str):
+        osmium.SimpleHandler.__init__(self)
+        self.output_folder = output_folder
+        self.highway_writer = self.get_writer('highway.osm')
+        self.big_road_writer = self.get_writer('big_road.osm')
+        self.middle_road_writer = self.get_writer('middle_road.osm')
+        self.small_road_writer = self.get_writer('small_road.osm')
+        self.stream_writer = self.get_writer('stream.osm')
+        self.aerodrome_writer = self.get_writer('aerodrome.osm')
+        self.urban_writer = self.get_writer('urban.osm')
+        self.stateborder_writer = self.get_writer('stateborder.osm')
+        self.water_writer = self.get_writer('water.osm')
+        self.wetland_writer = self.get_writer('wetland.osm')
+        self.swamp_writer = self.get_writer('swamp.osm')
+        self.river_writer = self.get_writer('river.osm')
+        self.glacier_writer = self.get_writer('glacier.osm')
+        self.volcano_writer = self.get_writer('volcano.osm')
+        self.beach_writer = self.get_writer('beach.osm')
+        self.forest_writer = self.get_writer('forest.osm')
+        self.farmland_writer = self.get_writer('farmland.osm')
+        self.vineyard_writer = self.get_writer('vineyard.osm')
+        self.meadow_writer = self.get_writer('meadow.osm')
+        self.grass_writer = self.get_writer('grass.osm')
+        self.quarry_writer = self.get_writer('quarry.osm')
+        self.bare_rock_writer = self.get_writer('bare_rock.osm')
+        self.border_writer = self.get_writer('border.osm')
+
+    def get_writer(self, filename: str):
+        return osmium.SimpleWriter(
+            os.path.join(self.output_folder, filename))
+
+    def node(self, n):
+        self.process(n, 'add_node')
+
+    def way(self, w):
+        self.process(w, 'add_way')
+
+    def relation(self, r):
+        self.process(r, 'add_relation')
+
+    def process(self, e, writer_method):
+        highway_tag = e.tags.get('highway')
+        waterway_tag = e.tags.get('waterway')
+        aeroway_tag = e.tags.get('aeroway')
+        landuse_tag = e.tags.get('landuse')
+        boundary_tag = e.tags.get('boundary')
+        admin_level_tag = e.tags.get('admin_level')
+        natural_tag = e.tags.get('natural')
+        water_tag = e.tags.get('water')
+        wetland_tag = e.tags.get('wetland')
+        volcano_status_tag = e.tags.get('volcano:status')
+
+        if highway_tag in ['motorway', 'trunk']:
+            getattr(self.highway_writer, writer_method)(e)
+        if highway_tag in ['primary', 'secondary']:
+            getattr(self.big_road_writer, writer_method)(e)
+        if highway_tag == 'tertiary':
+            getattr(self.middle_road_writer, writer_method)(e)
+        if highway_tag == 'residential':
+            getattr(self.small_road_writer, writer_method)(e)
+        if waterway_tag in ['river', 'stream'] or water_tag == 'river':
+            getattr(self.stream_writer, writer_method)(e)
+        if aeroway_tag == 'launchpad':
+            getattr(self.aerodrome_writer, writer_method)(e)
+        if landuse_tag in ['commercial', 'construction', 'industrial',
+                           'residential', 'retail']:
+            getattr(self.urban_writer, writer_method)(e)
+        if boundary_tag == 'administrative' and admin_level_tag in ['3', '4']:
+            if natural_tag != 'coastline' and admin_level_tag not in \
+               ['2', '5', '6', '7', '8', '9', '10', '11']:
+                getattr(self.stateborder_writer, writer_method)(e)
+        if water_tag in ['lake', 'reservoir'] or natural_tag == 'water' or \
+           landuse_tag == 'reservoir':
+            getattr(self.water_writer, writer_method)(e)
+        if natural_tag == 'wetland':
+            getattr(self.wetland_writer, writer_method)(e)
+        if natural_tag == 'wetland' and wetland_tag == 'swamp':
+            getattr(self.swamp_writer, writer_method)(e)
+        if waterway_tag in ['river', 'riverbank', 'canal'] or \
+           water_tag == 'river':
+            getattr(self.river_writer, writer_method)(e)
+        if natural_tag == 'glacier':
+            getattr(self.glacier_writer, writer_method)(e)
+        if natural_tag == 'volcano' and volcano_status_tag == 'active':
+            getattr(self.volcano_writer, writer_method)(e)
+        if natural_tag == 'beach':
+            getattr(self.beach_writer, writer_method)(e)
+        if landuse_tag == 'forest':
+            getattr(self.forest_writer, writer_method)(e)
+        if landuse_tag == 'farmland':
+            getattr(self.farmland_writer, writer_method)(e)
+        if landuse_tag == 'vineyard':
+            getattr(self.vineyard_writer, writer_method)(e)
+        if landuse_tag == 'meadow':
+            getattr(self.meadow_writer, writer_method)(e)
+        if landuse_tag in ['grass', 'fell', 'heath', 'scrub'] \
+           or natural_tag == 'grassland':
+            getattr(self.grass_writer, writer_method)(e)
+        if landuse_tag == 'quarry':
+            getattr(self.quarry_writer, writer_method)(e)
+        if landuse_tag == 'bare_rock' or natural_tag in ['scree', 'shingle']:
+            getattr(self.bare_rock_writer, writer_method)(e)
+        if boundary_tag == 'administrative' and admin_level_tag == '2':
+            if natural_tag != 'coastline' and admin_level_tag not in \
+               ['3', '4', '5', '6', '7', '8', '9', '10', '11']:
+                getattr(self.border_writer, writer_method)(e)
 
 
-OSM_FILTER_CONDITON = {
-    # TODO: fill in the condition
-    # "highway":[''],
-    # "big_road":[''],
-    # "middle_road":[''],
-    # "small_road":[''],
-    # "stream":[''],
-    # "aerodrome":[''],
-    # "urban":[''],
-    # "stateborder":[''],
-    "water": ['--keep="water=lake OR water=reservoir OR natural=water OR landuse=reservoir"'],
-    "wetland": ['--keep="natural=wetland"'],
-    "swamp": ['--keep="natural=wetland AND wetland=swamp"'],
-    "river": ['--keep="waterway=river OR water=river OR waterway=riverbank OR waterway=canal"'],
-    "glacier": ['--keep="natural=glacier"'],
-    "volcano": ['--keep="natural=volcano AND volcano:status=active"'],
-    "beach": ['--keep="natural=beach"'],
-    "forest": ['--keep="landuse=forest"'],
-    "farmland": ['--keep="landuse=farmland"'],
-    "vineyard": ['--keep="landuse=vineyard"'],
-    "meadow": ['--keep="landuse=meadow"'],
-    "grass": ['--keep="landuse=grass OR natural=grassland OR natural=fell OR natural=heath OR natural=scrub"'],
-    "quarry": ['--keep="landuse=quarry"'],
-    "bare_rock": ['--keep="landuse=bare_rock OR natural=scree OR natural=shingle"'],
-    "border": ['--keep="boundary=administrative AND admin_level=2"', '--drop="natural=coastline OR admin_level=3 OR admin_level=4 OR admin_level=5 OR admin_level=6 OR admin_level=7 OR admin_level=8 OR admin_level=9 OR admin_level=10 OR admin_level=11"']
-}
-
-OSM_POSTFIX: dict[str, list[tuple[str, str]]] = {
-    # "urban": [("urban", '|layername=multipolygons')],
-    "forest": [
-        ("broadleaved", '|layername=multipolygons|subset="other_tags" = \'"leaf_type"=>"broadleaved"\''),
-        ("needleleaved", '|layername=multipolygons|subset="other_tags" = \'"leaf_type"=>"needleleaved"\''),
-        ("mixedforest", '|layername=multipolygons')],
-    "beach": [("beach", '|layername=multipolygons')],
-    "grass": [("grass", '|layername=multipolygons')],
-    "farmland": [("farmland", '|layername=multipolygons')],
-    "meadow": [("meadow", '|layername=multipolygons')],
-    "quarry": [("quarry", '|layername=multipolygons')],
-    "water": [("water", '|layername=multipolygons|subset="natural" = \'water\'')],
-    "glacier": [("glacier", '|layername=multipolygons')],
-    "wetland": [("wetland", '|layername=multipolygons')],
-    "swamp": [("swamp", '|layername=multipolygons')],
-}
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    filename='preprocess.log',)
-
-
-def run_subprocess(name: str, cmd: list[str]):
-    logging.debug(f'[{name}] ' + ' '.join(cmd))
-    result = subprocess.run(cmd,
-                            cwd=OSM_FOLDER,
-                            capture_output=True,
-                            text=True)
-    logging.info(f'[{name}]' + result.stdout)
-    logging.info(f'[{name}]' + result.stderr)
-
-
-def osm_convert_and_postfix(name: str):
-    osm_file = os.path.join(OSM_FOLDER, name+".osm")
-    run_subprocess(name, [OSMFILTER_PATH, output_osm,
-                          '--verbose', *OSM_FILTER_CONDITON[name],
-                          f'-o={osm_file}'])
-    # for c in OSM_POSTFIX[name]:
-    #     o = processing.run("native:fixgeometries", {
-    #         'INPUT': osm_file + c[1],
-    #         'OUTPUT': os.path.join(OSM_FOLDER, c[0]+".shp")})
-    #     logging.info(f'[{c[0]}/{c[1]}]' + o)
-
-
-def osm_preprocess():
-    logging.info("===== OSM preprocess =====")
-
-    # convert pbf to osm
-    logging.info("===== Convert PBF to O5M =====")
-    unfiltered_o5m = os.path.join(OSM_FOLDER, "unfiltered.o5m")
-    run_subprocess("PBF to O5M", [OSMCONVERT_PATH, PBF_PATH,
-                                  '--verbose', f'-o={unfiltered_o5m}'])
-    # pre filter the o5m
-    logging.info("===== Pre-filter O5M =====")
-    output_o5m = os.path.join(OSM_FOLDER, "output.o5m")
-    keep_conditions = []
-
-    for condition in OSM_FILTER_CONDITON.values():
-        for item in condition:
-            # Only keep the items that start with '--keep'
-            if item.startswith('--keep'):
-                item = item.replace('--keep="', '').replace('"', '')
-                keep_conditions.append(item)
-    conditions = '--keep="' + ' OR '.join(keep_conditions) + '"'
-    run_subprocess("Pre-filter O5M", [OSMFILTER_PATH, unfiltered_o5m,
-                                      '--verbose', conditions,
-                                      f'-o={output_o5m}'])
-    os.remove(unfiltered_o5m)
-
-    # uncompress to osm
-    logging.info("===== Uncompress O5M to OSM =====")
-    run_subprocess("Uncompress O5M to OSM", [OSMCONVERT_PATH, output_o5m,
-                                             '--drop-version', '--verbose',
-                                             f'-o={output_osm}'])
-    os.remove(output_o5m)
-
-
-def osm_filter():
-    # filter the osm
-    logging.info("===== Filter OSM =====")
-    pool = multiprocessing.Pool(processes=10)
-    for name in OSM_FILTER_CONDITON:
-        pool.apply_async(osm_convert_and_postfix, args=(name,))
-    pool.close()
-    pool.join()
-
-
-# osm_preprocess()
-osm_filter()
-qgs.exitQgis()
+# Load your planet.osm.pbf file and preprocess
+output_folder = os.path.join(CONFIG['osm_folder_path'], 'all/')
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
+OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
