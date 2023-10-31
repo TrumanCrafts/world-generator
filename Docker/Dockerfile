@@ -15,6 +15,8 @@ RUN apt update && apt install -y \
     # install openjdk-17
     openjdk-17-jdk \
     xserver-xorg xorg xvfb\
+    cmake libboost-dev \
+    libexpat1-dev  libbz2-dev \
     # imagemagick
     libpng-dev libjpeg-dev libtiff-dev imagemagick\
     # install QGIS 
@@ -42,6 +44,9 @@ RUN apt update && apt install -y \
     && rm /tmp/Minutor.Ubuntu-22.04.zip \
     # post cleanup
     && apt clean \
+    # pip install osmium
+    && pip install osmium --break-system-packages \
+    && rm -rf /root/.cache/pip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY config /root/.local/share/worldpainter/config
