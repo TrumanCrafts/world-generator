@@ -1,4 +1,5 @@
 {
   "pbf_path": "",
-  "osm_folder_path": ""
+  "osm_folder_path": "",
+  "qgis_project_path": ""
 }

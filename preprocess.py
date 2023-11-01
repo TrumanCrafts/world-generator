@@ -1,6 +1,29 @@
 import osmium
 import os
+import multiprocessing
+
+from qgiscontrol import QGISController
 from config import CONFIG
+
+OSM_POSTFIX: dict[str, tuple[str, str]] = {
+    # "output_file": ("input_file", "suffix")
+    "urban": ("urban", '|layername=multipolygons'),
+    "broadleaved": ("forest", '|layername=multipolygons|\
+subset="other_tags" = \'"leaf_type"=>"broadleaved"\''),
+    "needleleaved": ("forest", '|layername=multipolygons|\
+subset="other_tags" = \'"leaf_type"=>"needleleaved"\''),
+    "mixedforest": ("forest", '|layername=multipolygons'),
+    "beach": ("beach", '|layername=multipolygons'),
+    "grass": ("grass", '|layername=multipolygons'),
+    "farmland": ("farmland", '|layername=multipolygons'),
+    "meadow": ("meadow", '|layername=multipolygons'),
+    "quarry": ("quarry", '|layername=multipolygons'),
+    "water": ("water",
+              '|layername=multipolygons|subset="natural" = \'water\''),
+    "glacier": ("glacier", '|layername=multipolygons'),
+    "wetland": ("wetland", '|layername=multipolygons'),
+    "swamp": ("swamp", '|layername=multipolygons'),
+}
 
 
 class OSMPreprocessor(osmium.SimpleHandler):
@@ -112,8 +135,34 @@ class OSMPreprocessor(osmium.SimpleHandler):
                 getattr(self.border_writer, writer_method)(e)
 
 
-# Load your planet.osm.pbf file and preprocess
-output_folder = os.path.join(CONFIG['osm_folder_path'], 'all/')
-if not os.path.exists(output_folder):
-    os.makedirs(output_folder)
-OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+def OSMPreprocess():
+    # Load your planet.osm.pbf file and preprocess
+    output_folder = os.path.join(CONFIG['osm_folder_path'], 'all/')
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+    # qgis postfix
+    pool = multiprocessing.Pool(processes=10)
+    for output_name in OSM_POSTFIX:
+        pool.apply_async(QGISfix, args=(output_name,))
+    pool.close()
+    pool.join()
+
+
+def QGISfix(output_name: str):
+    input_file = os.path.join(
+        CONFIG['osm_folder_path'], 'all/',
+        OSM_POSTFIX[output_name][0] + ".osm")
+    output_file = os.path.join(
+        CONFIG['osm_folder_path'], 'all/',
+        output_name + ".shp"
+        )
+    QGISController(CONFIG["qgis_project_path"]).run(
+        "native:fixgeometries",
+        {
+            'INPUT': input_file + OSM_POSTFIX[output_name][1],
+            'OUTPUT': output_file
+        })
+
+
+OSMPreprocess()
