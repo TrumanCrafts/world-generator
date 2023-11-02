@@ -1,9 +1,13 @@
 import osmium
 import os
 import multiprocessing
+from logger import configure_logger
 
-from qgiscontrol import QGISController
+from qgiscontroller import QGISController
 from config import CONFIG
+
+logger = configure_logger(__name__)
+
 
 OSM_POSTFIX: dict[str, tuple[str, str]] = {
     # "output_file": ("input_file", "suffix")
@@ -137,16 +141,21 @@ class OSMPreprocessor(osmium.SimpleHandler):
 
 def OSMPreprocess():
     # Load your planet.osm.pbf file and preprocess
+    logger.info("start OSM preprocess...")
+    logger.info("converting PBF file into filtered osm files...")
     output_folder = os.path.join(CONFIG['osm_folder_path'], 'all/')
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+    logger.info("OSM preprocess completed")
     # qgis postfix
+    logger.info("QGIS fix geometries...")
     pool = multiprocessing.Pool(processes=10)
     for output_name in OSM_POSTFIX:
         pool.apply_async(QGISfix, args=(output_name,))
     pool.close()
     pool.join()
+    logger.info("QGIS fix geometries done")
 
 
 def QGISfix(output_name: str):
@@ -163,6 +172,3 @@ def QGISfix(output_name: str):
             'INPUT': input_file + OSM_POSTFIX[output_name][1],
             'OUTPUT': output_file
         })
-
-
-OSMPreprocess()
