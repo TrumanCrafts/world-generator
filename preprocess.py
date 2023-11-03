@@ -6,7 +6,7 @@ from logger import configure_logger
 from qgiscontroller import QGISController
 from config import CONFIG
 
-logger = configure_logger(__name__)
+logger = configure_logger("preprocess")
 
 
 OSM_POSTFIX: dict[str, tuple[str, str]] = {
