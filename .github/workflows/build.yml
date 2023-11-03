@@ -1,8 +1,13 @@
 name: Build Docker Image
 
+# on dispatch
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: false
+        default: 'latest'
 
 jobs:
   build:
