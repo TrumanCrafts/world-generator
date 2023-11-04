@@ -3,7 +3,7 @@ import os
 import multiprocessing
 from logger import configure_logger
 
-from qgiscontroller import QGISController
+from qgiscontroller import fix_geometry
 from config import CONFIG
 
 logger = configure_logger("preprocess")
@@ -166,9 +166,9 @@ def QGISfix(output_name: str):
         CONFIG['osm_folder_path'], 'all/',
         output_name + ".shp"
         )
-    QGISController(CONFIG["qgis_project_path"]).run(
-        "native:fixgeometries",
-        {
+
+    o = fix_geometry("", "native:fixgeometries", {
             'INPUT': input_file + OSM_POSTFIX[output_name][1],
             'OUTPUT': output_file
         })
+    logger.info(f"QGIS fix geometries {output_name} done: {o['OUTPUT']}")
