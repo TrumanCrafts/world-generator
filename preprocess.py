@@ -139,13 +139,14 @@ class OSMPreprocessor(osmium.SimpleHandler):
                 getattr(self.border_writer, writer_method)(e)
 
 
-def OSMPreprocess():
+def preprocessOSM():
     # Load your planet.osm.pbf file and preprocess
     logger.info("start OSM preprocess...")
     logger.info("converting PBF file into filtered osm files...")
     output_folder = os.path.join(CONFIG['osm_folder_path'], 'all/')
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    # TODO: A filter will be added later for structures you don't want
     OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
     logger.info("OSM preprocess completed")
     # qgis postfix

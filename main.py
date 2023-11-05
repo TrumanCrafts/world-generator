@@ -1,5 +1,7 @@
-from preprocess import OSMPreprocess
+from tiles import generateTiles
+from preprocess import preprocessOSM
 
 
 if __name__ == '__main__':
-    OSMPreprocess()
+    # preprocessOSM()
+    generateTiles()
