@@ -3,5 +3,5 @@ from preprocess import preprocessOSM
 
 
 if __name__ == '__main__':
-    # preprocessOSM()
+    preprocessOSM()
     generateTiles()

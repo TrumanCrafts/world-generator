@@ -119,7 +119,7 @@ def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
 
 
 def generateTiles():
-    # copyOSMFiles()
+    copyOSMFiles()
 
     # Generate tiles
     # TODO: adjust Degree per Tile / Blocks per Tile
