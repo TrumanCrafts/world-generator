@@ -11,31 +11,6 @@ from logger import configure_logger
 
 logger = configure_logger(__name__)
 
-
-def copyOSMFiles():
-    # link all files from the OSM directory to the OSMDATA directory
-    logger.info("linking/coping OSM files...")
-    src_dir = os.path.join(CONFIG['osm_folder_path'], 'all/')
-    dest_dir = os.path.join(
-        os.path.dirname(CONFIG['qgis_project_path']), 'OsmData/')
-
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
-
-    for file_name in os.listdir(src_dir):
-        src_file = os.path.join(src_dir, file_name)
-        dest_file = os.path.join(dest_dir, file_name)
-
-        if sys.platform == "win32":
-            # Copy files if the platform is Windows
-            shutil.copy2(src_file, dest_file)
-        else:
-            # Create symbolic link if the platform is Linux or MacOS
-            if not os.path.exists(dest_file):
-                os.symlink(src_file, dest_file)
-    logger.info("linking/coping OSM files done")
-
-
 HEIGHT_LAYER_NAMES: dict[str, tuple[str]] = {
     '': ('heightmap_source', 'heightmap_land_polygons', 'heightmap_background')
 }
@@ -92,14 +67,39 @@ ores = ['aluiminum', 'antimony', 'barite', 'chromium', 'clay', 'coal',
 ore_dict = {ore: (ore + '_ores',) for ore in ores}
 LAYER_NAMES.update(ore_dict)
 
+heightmap_input_name = os.path.join(
+        os.path.dirname(CONFIG['qgis_heightmap_project_path']),
+        'TifFiles', 'HQheightmap.tif')
+
+
+def copyOSMFiles():
+    # link all files from the OSM directory to the OSMDATA directory
+    logger.info("linking/coping OSM files...")
+    src_dir = os.path.join(CONFIG['osm_folder_path'], 'all/')
+    dest_dir = os.path.join(
+        os.path.dirname(CONFIG['qgis_project_path']), 'OsmData/')
+
+    if not os.path.exists(dest_dir):
+        os.makedirs(dest_dir)
+
+    for file_name in os.listdir(src_dir):
+        src_file = os.path.join(src_dir, file_name)
+        dest_file = os.path.join(dest_dir, file_name)
+
+        if sys.platform == "win32":
+            # Copy files if the platform is Windows
+            shutil.copy2(src_file, dest_file)
+        else:
+            # Create symbolic link if the platform is Linux or MacOS
+            if not os.path.exists(dest_file):
+                os.symlink(src_file, dest_file)
+    logger.info("linking/coping OSM files done")
+
 
 def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
                    xMin: float, xMax: float, yMin: float, yMax: float):
     # gdal for HQ Heightmap
     logger.info(f"gdal_translate of {tile}...")
-    heightmap_input_name = os.path.join(
-        os.path.dirname(CONFIG['qgis_heightmap_project_path']),
-        'TifFiles', 'HQheightmap.tif')
     heightmap_output_folder = os.path.join(image_output_folder,
                                            tile, 'heightmap')
     if not os.path.exists(heightmap_output_folder):
@@ -114,57 +114,65 @@ def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
         heightmap_input_name, heightmap_output_name],
         capture_output=True, text=True
     )
-    logger.info(f"gdal_translate stdout: {result.stdout}")
-    logger.info(f"gdal_translate stderr: {result.stderr}")
+    logger.info(f"gdal_translate {tile} stdout: {result.stdout}")
+    logger.info(f"gdal_translate {tile} stderr: {result.stderr}")
+
+
+def calculateTiles(xMin: float, yMax: float) -> str:
+    # Calculate longNumber and latNumber
+    longNumber = abs(xMin) if xMin <= 0 else xMin
+    latNumber = (abs(yMax)+1) if yMax <= 0 else yMax - 1
+    # Determine longDir and latDir
+    longDir = "E" if xMin >= 0 else "W"
+    latDir = "S" if yMax <= 0 else "N"
+    tile = f'{latDir}{latNumber:02}{longDir}{longNumber:03}'
+    return tile
 
 
 def generateTiles():
+    # Copy OSM files for QGIS project
     copyOSMFiles()
 
     # Generate tiles
+    image_output_folder = os.path.join(
+                CONFIG['output_folder_path'], 'image_exports/')
+    if not os.path.exists(image_output_folder):
+        os.makedirs(image_output_folder)
+
     # TODO: adjust Degree per Tile / Blocks per Tile
     degree_per_tile = 2
     blocks_per_tile = 512
     # x -180 ~ 180  y -90 ~ 90
     pool = multiprocessing.Pool(processes=15)
-    for x in range(-180, 180, degree_per_tile):
-        for y in range(-90, 90, degree_per_tile):
-            xMin = x
+    for xMin in range(-180, 180, degree_per_tile):
+        for yMin in range(-90, 90, degree_per_tile):
             xMax = xMin + degree_per_tile
-            yMin = y
             yMax = yMin + degree_per_tile
 
-            # Calculate longNumber and latNumber
-            longNumber = abs(xMin) if xMin <= 0 else xMin
-            latNumber = (abs(yMax)+1) if yMax <= 0 else yMax - 1
-            # Determine longDir and latDir
-            longDir = "E" if xMin >= 0 else "W"
-            latDir = "S" if yMax <= 0 else "N"
-            tile = f'{latDir}{latNumber:02}{longDir}{longNumber:03}'
+            tile = calculateTiles(xMin, yMax)
 
-            image_output_folder = os.path.join(
-                CONFIG['output_folder_path'], 'image_exports/')
-            if not os.path.exists(image_output_folder):
-                os.makedirs(image_output_folder)
+            tiles_folder = os.path.join(image_output_folder, f'{tile}/')
+            if not os.path.exists(tiles_folder):
+                os.makedirs(tiles_folder)
 
             logger.info(f"generating tiles of {tile}...")
             pool.apply_async(export_image,
                              (CONFIG['qgis_project_path'], blocks_per_tile,
                               xMin, xMax, yMin, yMax, tile,
-                              LAYER_NAMES, image_output_folder))
+                              LAYER_NAMES, tiles_folder))
             pool.apply_async(export_image,
                              (CONFIG['qgis_bathymetry_project_path'],
                               blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                              BATHYMETRY_LAYER_NAMES, image_output_folder))
+                              BATHYMETRY_LAYER_NAMES, tiles_folder))
             pool.apply_async(export_image,
                              (CONFIG['qgis_terrain_project_path'],
                               blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                              TERRAIN_LAYER_NAMES, image_output_folder))
+                              TERRAIN_LAYER_NAMES, tiles_folder))
             pool.apply_async(export_image,
                              (CONFIG['qgis_heightmap_project_path'],
                               blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                              HEIGHT_LAYER_NAMES, image_output_folder))
-            pool.apply_async(gdal_translate, (image_output_folder, tile,
+                              HEIGHT_LAYER_NAMES, tiles_folder))
+            pool.apply_async(gdal_translate, (tiles_folder, tile,
                                               blocks_per_tile, xMin, xMax,
                                               yMin, yMax))
     pool.close()

@@ -107,14 +107,11 @@ def export_image(projectPath: str, block_per_tile: int,
         settings.flags = context.flags()
 
         # create image
-        folder = os.path.join(outputFolder, f'{tile}/')
-        if not os.path.exists(folder):
-            os.makedirs(folder)
         if len(layerOutputName) == 0:
-            outputName = os.path.join(folder,  f'{tile}.png')
+            outputName = os.path.join(outputFolder,  f'{tile}.png')
         else:
             outputName = os.path.join(
-                folder,  f'{tile}_{layerOutputName}.png')
+                outputFolder,  f'{tile}_{layerOutputName}.png')
         ret = exporter.exportToImage(outputName, settings)
         assert ret == 0
         logger.info(f"{tile}_{layerOutputName} generated")
