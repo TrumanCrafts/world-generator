@@ -55,6 +55,7 @@ def runWorldPainter(tile: str, degree_per_tile: int,
     #     var mod_williamWythers = arguments[38];
     #     var mod_Create = arguments[39];
     logger.info(f"WorldPainter for {tile}...")
+    # TODO: How does WorldPainter get WorldName?
     o = subprocess.run([
         "wpscript", scriptjs, CONFIG["scripts_folder_path"],
         tile[0:1], str(int(tile[1:3])), tile[3:4], str(int(tile[4:7])),
