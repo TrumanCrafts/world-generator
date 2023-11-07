@@ -6,6 +6,7 @@ from imageexport import imageExport
 from config import CONFIG
 from logger import configure_logger
 from magick import magickConvert
+from wpscript import wpGenerate
 
 logger = configure_logger("tiles")
 
@@ -39,3 +40,4 @@ def generateTiles():
     copyOSMFiles()
     imageExport()
     magickConvert()
+    wpGenerate()

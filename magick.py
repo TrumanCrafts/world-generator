@@ -6,7 +6,7 @@ from config import CONFIG
 from tools import calculateTiles
 
 image_output_folder = os.path.join(
-    CONFIG['output_folder_path'], 'image_exports/')
+    CONFIG['scripts_folder_path'], 'image_exports/')
 
 
 def runMagick(tile: str, blocks_per_tile: int):

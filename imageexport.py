@@ -70,7 +70,7 @@ heightmap_input_name = os.path.join(
     os.path.dirname(CONFIG['qgis_heightmap_project_path']),
     'TifFiles', 'HQheightmap.tif')
 image_output_folder = os.path.join(
-    CONFIG['output_folder_path'], 'image_exports/')
+    CONFIG['scripts_folder_path'], 'image_exports/')
 
 
 def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
