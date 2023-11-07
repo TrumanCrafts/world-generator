@@ -4,7 +4,7 @@ import subprocess
 
 from qgiscontroller import export_image
 from logger import configure_logger
-from tiles import calculateTiles
+from tools import calculateTiles
 from config import CONFIG
 
 logger = configure_logger("image_export")
