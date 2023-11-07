@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import shutil
 
@@ -35,9 +36,48 @@ def copyOSMFiles():
     logger.info("linking/coping OSM files done")
 
 
+def postProcessMap():
+    # merge all the files
+    logger.info("merging all the files...")
+    final_path = os.path.join(
+        CONFIG['scripts_folder_path'], CONFIG["world_name"])
+    if not os.path.exists(final_path):
+        os.makedirs(final_path)
+    region = os.path.join(final_path, 'region')
+    if not os.path.exists(region):
+        os.makedirs(region)
+
+    wp_folder = os.path.join(
+            CONFIG['scripts_folder_path'], 'wpscript', 'exports',
+            CONFIG["world_name"])
+
+    # copy the level.dat file
+    shutil.copy2(os.path.join(wp_folder, 'level.dat'), final_path)
+    # copy the session.lock file
+    shutil.copy2(os.path.join(wp_folder, 'session.lock'), final_path)
+    # copy the region files
+    for file_name in os.listdir(wp_folder, 'region'):
+        src_file = os.path.join(wp_folder, 'region', file_name)
+        dest_file = os.path.join(final_path, 'region', file_name)
+        shutil.copy2(src_file, dest_file)
+    logger.info("merging all the files done")
+    # run minutor to generate the png
+    logger.info("running minutor...")
+    o = subprocess.run([
+        "minutor", "--world",
+        wp_folder, "--depth", "319", "--savepng",
+        os.path.join(final_path, CONFIG["world_name"] + ".png")],
+        capture_output=True, text=True
+    )
+    logger.info(f"minutor output: {o.stdout}")
+    logger.error(f"minutor error: {o.stderr}")
+    logger.info("running minutor done")
+
+
 def generateTiles():
     # Copy OSM files for QGIS project
     copyOSMFiles()
     imageExport()
     magickConvert()
     wpGenerate()
+    postProcessMap()

@@ -92,7 +92,7 @@ def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
         capture_output=True, text=True
     )
     logger.info(f"gdal_translate {tile} stdout: {result.stdout}")
-    logger.info(f"gdal_translate {tile} stderr: {result.stderr}")
+    logger.error(f"gdal_translate {tile} stderr: {result.stderr}")
 
 
 def imageExportTile(pool, blocks_per_tile: int,

@@ -147,7 +147,11 @@ def preprocessOSM():
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     # TODO: A filter will be added later for structures you don't want
-    OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+    try:
+        OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+    except Exception as e:
+        logger.error(f"OSM preprocess error: {e}")
+        exit(1)
     logger.info("OSM preprocess completed")
     # qgis postfix
     logger.info("QGIS fix geometries...")

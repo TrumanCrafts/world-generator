@@ -2,10 +2,12 @@ import multiprocessing
 import subprocess
 import os
 from config import CONFIG
+from logger import configure_logger
 
 from tools import calculateTiles
 
 scriptjs = os.path.join(CONFIG["scripts_folder_path"], "wpscript.js")
+logger = configure_logger("wpscript")
 
 
 def runWorldPainter(tile: str, degree_per_tile: int,
@@ -52,20 +54,36 @@ def runWorldPainter(tile: str, degree_per_tile: int,
     #     var mod_Terralith = arguments[37];
     #     var mod_williamWythers = arguments[38];
     #     var mod_Create = arguments[39];
-    subprocess.run([
+    logger.info(f"WorldPainter for {tile}...")
+    o = subprocess.run([
         "wpscript", scriptjs, CONFIG["scripts_folder_path"],
         tile[0:1], str(int(tile[1:3])), tile[3:4], str(int(tile[4:7])),
         str(blocks_per_tile), str(degree_per_tile), str(height_ratio),
         "True", "False", "False", "False", "False", "False", "False", "True",
         "True", "True", "True", "False", "True", "True", "True", "False",
         "True", "True", "True", "1-19", "0", "-64", "2032", "True",
-        tile, "ecoregions", "8" "False", "False", "False", "False", "False"])
+        tile, "ecoregions", "8" "False", "False", "False", "False", "False"],
+        capture_output=True, text=True, env=os.environ.copy())
+    logger.info(f"WorldPainter for {tile} output: {o.stdout}")
+    logger.error(f"WorldPainter for {tile} error: {o.stderr}")
+    o = subprocess.run([
+        "minutor", "--world",
+        os.path.join(
+            CONFIG["scripts_folder_path"], "wpscript", "exports", tile),
+        "--depth", "319", "--savepng",
+        os.path.join(CONFIG["scripts_folder_path"], "render", tile + ".png")],
+        capture_output=True, text=True
+    )
+    logger.info(f"minutor for {tile} output: {o.stdout}")
+    logger.error(f"minutor for {tile} error: {o.stderr}")
+    logger.info(f"WorldPainter for {tile} done")
 
 
 def wpGenerate():
     degree_per_tile = 2
     blocks_per_tile = 512
     height_ratio = 30
+    os.environ["WorldName"] = CONFIG["world_name"]
     pool = multiprocessing.Pool(processes=15)
     for xMin in range(-180, 180, degree_per_tile):
         for yMin in range(-90, 90, degree_per_tile):
@@ -75,4 +93,4 @@ def wpGenerate():
                 (tile, degree_per_tile, blocks_per_tile, height_ratio))
     pool.close()
     pool.join()
-    print(f"magickConvert {tile} done")
+    logger.info(f"All magickConvert {tile} done")

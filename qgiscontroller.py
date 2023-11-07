@@ -11,21 +11,29 @@ def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
     sys.path.append('/usr/share/qgis/python/plugins')
     from qgis.core import QgsApplication, QgsProject
 
-    QgsApplication.setPrefixPath("/usr", True)
-    qgs = QgsApplication([], False)
-    qgs.initQgis()
+    try:
+        QgsApplication.setPrefixPath("/usr", True)
+        qgs = QgsApplication([], False)
+        qgs.initQgis()
+        # logger.info(self.qgs.showSettings())
+        from qgis import processing
+        from processing.core.Processing import Processing
+        Processing.initialize()
+    except Exception as e:
+        logger.error(f'QGIS init error at {projectPath}: {e}')
 
-    # logger.info(self.qgs.showSettings())
-    from qgis import processing
-    from processing.core.Processing import Processing
-    Processing.initialize()
+    try:
+        if len(projectPath) != 0:
+            project = QgsProject.instance()
+            project.read(projectPath)
+            logger.info(f'QGIS read project {project.fileName()}')
+    except Exception as e:
+        logger.error(f'QGIS read project error at {projectPath}: {e}')
 
-    if len(projectPath) != 0:
-        project = QgsProject.instance()
-        project.read(projectPath)
-        logger.info(f'QGIS read project {project.fileName()}')
-
-    o = processing.run(algorithm, parameters)
+    try:
+        o = processing.run(algorithm, parameters)
+    except Exception as e:
+        logger.error(f'QGIS run error at {projectPath}: {e}')
     # qgs.exitQgis()
     return o
 
@@ -42,18 +50,24 @@ def export_image(projectPath: str, block_per_tile: int,
         QgsRectangle, QgsLayoutPoint, QgsLayoutExporter,
         QgsLayoutRenderContext)
 
-    QgsApplication.setPrefixPath("/usr", True)
-    qgs = QgsApplication([], False)
-    qgs.initQgis()
-    # logger.info(self.qgs.showSettings())
-    from qgis import processing
-    from processing.core.Processing import Processing
-    Processing.initialize()
+    try:
+        QgsApplication.setPrefixPath("/usr", True)
+        qgs = QgsApplication([], False)
+        qgs.initQgis()
+        # logger.info(self.qgs.showSettings())
+        from qgis import processing
+        from processing.core.Processing import Processing
+        Processing.initialize()
+    except Exception as e:
+        logger.error(f'QGIS init error at {projectPath} {tile}: {e}')
 
-    if len(projectPath) != 0:
-        project = QgsProject.instance()
-        project.read(projectPath)
-        logger.info(f'QGIS read project {project.fileName()}')
+    try:
+        if len(projectPath) != 0:
+            project = QgsProject.instance()
+            project.read(projectPath)
+            logger.info(f'QGIS read project {project.fileName()}')
+    except Exception as e:
+        logger.error(f'QGIS read project error at {projectPath} {tile}: {e}')
 
     def uncheckAllLayers():
         alllayers = []
@@ -113,13 +127,18 @@ def export_image(projectPath: str, block_per_tile: int,
             outputName = os.path.join(
                 outputFolder,  f'{tile}_{layerOutputName}.png')
         ret = exporter.exportToImage(outputName, settings)
+        if ret != 0:
+            logger.error(f"exportToImage {tile} error: {ret}")
         assert ret == 0
         logger.info(f"{tile}_{layerOutputName} generated")
 
-    uncheckAllLayers()
-    for layerOutputName, Layers in LAYERS.items():
-        selectNodes(Layers)
-        export_image(layerOutputName)
+    try:
         uncheckAllLayers()
+        for layerOutputName, Layers in LAYERS.items():
+            selectNodes(Layers)
+            export_image(layerOutputName)
+            uncheckAllLayers()
+    except Exception as e:
+        logger.error(f'QGIS export image error at {projectPath} {tile}: {e}')
     # exit QGIS
     # qgs.exitQgis()
