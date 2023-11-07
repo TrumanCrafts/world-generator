@@ -3,7 +3,7 @@ import sys
 
 from logger import configure_logger
 
-logger = configure_logger(__name__)
+logger = configure_logger("qgiscontroller")
 
 
 def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
