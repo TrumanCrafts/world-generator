@@ -8,6 +8,32 @@ from config import CONFIG
 
 logger = configure_logger("preprocess")
 
+ALL_OSM_FILES = [
+    "aerodrome",
+    "bare_rock",
+    "beach",
+    "big_road",
+    "border",
+    "farmland",
+    "forest",
+    "glacier",
+    "grass",
+    "highway",
+    "landuse",
+    "meadow",
+    "middle_road",
+    "quarry",
+    "river",
+    "small_road",
+    "stateborder",
+    "stream",
+    "swamp",
+    "urban",
+    "volcano",
+    "water",
+    "wetland",
+    "vineyard"
+]
 
 OSM_POSTFIX: dict[str, tuple[str, str]] = {
     # "output_file": ("input_file", "suffix")
@@ -147,20 +173,32 @@ def preprocessOSM():
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     # TODO: A filter will be added later for structures you don't want
-    try:
-        OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
-    except Exception as e:
-        logger.error(f"OSM preprocess error: {e}")
-        exit(1)
-    logger.info("OSM preprocess completed")
+    # Check if .osm files already exist
+    osm_files_exist = all(os.path.exists(os.path.join(
+        output_folder, f"{name}.osm")) for name in ALL_OSM_FILES)
+    if not osm_files_exist:
+        try:
+            OSMPreprocessor(output_folder).apply_file(CONFIG['pbf_path'])
+        except Exception as e:
+            logger.error(f"OSM preprocess error: {e}")
+            exit(1)
+        logger.info("OSM preprocess completed")
+    else:
+        logger.info("Skipping OSMPreprocessor as .osm files already exist")
+
     # qgis postfix
     logger.info("QGIS fix geometries...")
-    pool = multiprocessing.Pool(processes=10)
-    for output_name in OSM_POSTFIX:
-        pool.apply_async(QGISfix, args=(output_name,))
-    pool.close()
-    pool.join()
-    logger.info("QGIS fix geometries done")
+    all_output_files_exist = all(os.path.exists(os.path.join(
+        output_folder, f"{name}.shp")) for name in OSM_POSTFIX)
+    if not all_output_files_exist:
+        pool = multiprocessing.Pool(processes=CONFIG['threads'])
+        for output_name in OSM_POSTFIX:
+            pool.apply_async(QGISfix, args=(output_name,))
+        pool.close()
+        pool.join()
+        logger.info("QGIS fix geometries done")
+    else:
+        logger.info("Skipping QGISfix as all output files already exist")
 
 
 def QGISfix(output_name: str):
@@ -170,10 +208,10 @@ def QGISfix(output_name: str):
     output_file = os.path.join(
         CONFIG['osm_folder_path'], 'all/',
         output_name + ".shp"
-        )
+    )
 
     o = fix_geometry("", "native:fixgeometries", {
-            'INPUT': input_file + OSM_POSTFIX[output_name][1],
-            'OUTPUT': output_file
-        })
+        'INPUT': input_file + OSM_POSTFIX[output_name][1],
+        'OUTPUT': output_file
+    })
     logger.info(f"QGIS fix geometries {output_name} done: {o['OUTPUT']}")

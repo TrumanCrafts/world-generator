@@ -26,6 +26,10 @@ def copyOSMFiles():
         src_file = os.path.join(src_dir, file_name)
         dest_file = os.path.join(dest_dir, file_name)
 
+        if os.path.exists(dest_file):
+            logger.info(f"Skipping {file_name} as it already exists")
+            continue
+
         if sys.platform == "win32":
             # Copy files if the platform is Windows
             shutil.copy2(src_file, dest_file)

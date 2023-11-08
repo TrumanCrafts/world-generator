@@ -85,7 +85,7 @@ def wpGenerate():
     blocks_per_tile = 512
     height_ratio = 30
     os.environ["WorldName"] = CONFIG["world_name"]
-    pool = multiprocessing.Pool(processes=15)
+    pool = multiprocessing.Pool(processes=CONFIG['threads'])
     for xMin in range(-180, 180, degree_per_tile):
         for yMin in range(-90, 90, degree_per_tile):
             tile = calculateTiles(xMin, yMin + degree_per_tile)

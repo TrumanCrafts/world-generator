@@ -73,16 +73,13 @@ image_output_folder = os.path.join(
     CONFIG['scripts_folder_path'], 'image_exports/')
 
 
-def gdal_translate(image_output_folder: str, tile: str, blocks_per_tile: int,
-                   xMin: float, xMax: float, yMin: float, yMax: float):
+def gdal_translate(heightimage_output_folder: str, tile: str,
+                   blocks_per_tile: int, xMin: float, xMax: float,
+                   yMin: float, yMax: float):
     # gdal for HQ Heightmap
     logger.info(f"gdal_translate of {tile}...")
-    heightmap_output_folder = os.path.join(image_output_folder,
-                                           tile, 'heightmap')
-    if not os.path.exists(heightmap_output_folder):
-        os.makedirs(heightmap_output_folder)
-    heightmap_output_name = os.path.join(heightmap_output_folder,
-                                         tile + '_exported.png')
+    heightmap_output_name = os.path.join(heightimage_output_folder,
+                                         f'{tile}_exported.png')
     result = subprocess.run([
         "gdal_translate", "-a_nodata", "none", "-outsize",
         str(blocks_per_tile), str(blocks_per_tile), "-projwin",
@@ -107,26 +104,56 @@ def imageExportTile(pool, blocks_per_tile: int,
         os.makedirs(tiles_folder)
 
     logger.info(f"generating images of {tile}...")
-    pool.apply_async(export_image,
-                     (CONFIG['qgis_project_path'], blocks_per_tile,
-                      xMin, xMax, yMin, yMax, tile,
-                      LAYER_NAMES, tiles_folder))
-    pool.apply_async(export_image,
-                     (CONFIG['qgis_bathymetry_project_path'],
-                      blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                      BATHYMETRY_LAYER_NAMES, tiles_folder))
-    pool.apply_async(export_image,
-                     (CONFIG['qgis_terrain_project_path'],
-                      blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                      TERRAIN_LAYER_NAMES, tiles_folder))
-    pool.apply_async(export_image,
-                     (CONFIG['qgis_heightmap_project_path'],
-                      blocks_per_tile, xMin, xMax, yMin, yMax, tile,
-                      HEIGHT_LAYER_NAMES, tiles_folder))
-    pool.apply_async(gdal_translate, (tiles_folder, tile,
-                                      blocks_per_tile, xMin, xMax,
-                                      yMin, yMax))
-    logger.info(f"generating images of {tile} done")
+    all_output_files_exist = all(os.path.exists(os.path.join(
+        tiles_folder, f"{tile}_{name}.png")) for name in LAYER_NAMES)
+    if not all_output_files_exist:
+        pool.apply_async(export_image,
+                         (CONFIG['qgis_project_path'], blocks_per_tile,
+                          xMin, xMax, yMin, yMax, tile,
+                          LAYER_NAMES, tiles_folder))
+    else:
+        logger.info(f"Skipping qgis_project_path of {tile}")
+    all_output_files_exist = all(os.path.exists(os.path.join(
+        tiles_folder, f"{tile}_{name}.png")
+        ) for name in BATHYMETRY_LAYER_NAMES)
+    if not all_output_files_exist:
+        pool.apply_async(export_image,
+                         (CONFIG['qgis_bathymetry_project_path'],
+                          blocks_per_tile, xMin, xMax, yMin, yMax, tile,
+                          BATHYMETRY_LAYER_NAMES, tiles_folder))
+    else:
+        logger.info(f"Skipping qgis_bathymetry_project_path of {tile}")
+    all_output_files_exist = all(os.path.exists(os.path.join(
+        tiles_folder, f"{tile}_{name}.png")
+        ) for name in TERRAIN_LAYER_NAMES)
+    if not all_output_files_exist:
+        pool.apply_async(export_image,
+                         (CONFIG['qgis_terrain_project_path'],
+                          blocks_per_tile, xMin, xMax, yMin, yMax, tile,
+                          TERRAIN_LAYER_NAMES, tiles_folder))
+    else:
+        logger.info(f"Skipping qgis_terrain_project_path of {tile}")
+    all_output_files_exist = os.path.exists(os.path.join(
+        tiles_folder, f"{tile}.png"))
+    if not all_output_files_exist:
+        pool.apply_async(export_image,
+                         (CONFIG['qgis_heightmap_project_path'],
+                          blocks_per_tile, xMin, xMax, yMin, yMax, tile,
+                          HEIGHT_LAYER_NAMES, tiles_folder))
+    else:
+        logger.info(f"Skipping qgis_heightmap_project_path of {tile}")
+
+    heightmap_output_folder = os.path.join(tiles_folder, 'heightmap')
+    if not os.path.exists(heightmap_output_folder):
+        os.makedirs(heightmap_output_folder)
+    all_output_files_exist = os.path.exists(os.path.join(
+        heightmap_output_folder, f"{tile}_exported.png"))
+    if not all_output_files_exist:
+        pool.apply_async(gdal_translate, (heightmap_output_folder, tile,
+                                          blocks_per_tile, xMin, xMax,
+                                          yMin, yMax))
+    else:
+        logger.info(f"Skipping gdal_translate of {tile}")
 
 
 def imageExport():
@@ -138,7 +165,8 @@ def imageExport():
     degree_per_tile = 2
     blocks_per_tile = 512
     # x -180 ~ 180  y -90 ~ 90
-    pool = multiprocessing.Pool(processes=12)
+    logger.info("image export...")
+    pool = multiprocessing.Pool(processes=CONFIG['threads'])
     for xMin in range(-180, 180, degree_per_tile):
         for yMin in range(-90, 90, degree_per_tile):
             imageExportTile(pool, blocks_per_tile, degree_per_tile,

@@ -214,7 +214,7 @@ def runMagick(tile: str, blocks_per_tile: int):
 def magickConvert():
     degree_per_tile = 2
     blocks_per_tile = 512
-    pool = multiprocessing.Pool(processes=15)
+    pool = multiprocessing.Pool(processes=CONFIG['threads'])
     for xMin in range(-180, 180, degree_per_tile):
         for yMin in range(-90, 90, degree_per_tile):
             tile = calculateTiles(xMin, yMin + degree_per_tile)
