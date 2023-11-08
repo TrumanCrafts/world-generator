@@ -6,5 +6,6 @@
   "qgis_bathymetry_project_path": "",
   "qgis_terrain_project_path": "",
   "qgis_heightmap_project_path": "",
-  "world_name": ""
+  "world_name": "",
+  "threads": 15
 }
