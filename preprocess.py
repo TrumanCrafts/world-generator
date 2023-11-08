@@ -19,7 +19,6 @@ ALL_OSM_FILES = [
     "glacier",
     "grass",
     "highway",
-    "landuse",
     "meadow",
     "middle_road",
     "quarry",

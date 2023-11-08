@@ -7,7 +7,7 @@ def configure_logger(name):
         format='%(asctime)s - %(levelname)s - %(module)s - %(message)s',
         handlers=[
             logging.FileHandler('generator.log'),
-            logging.StreamHandler()
+            # logging.StreamHandler()
         ]
     )
     logger = logging.getLogger(name)
