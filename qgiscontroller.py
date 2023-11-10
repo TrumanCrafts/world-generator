@@ -20,7 +20,10 @@ def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
         from processing.core.Processing import Processing
         Processing.initialize()
     except Exception as e:
+        qgs.exitQgis()
+        qgs.exit()
         logger.error(f'QGIS init error at {projectPath}: {e}')
+        return ''
 
     try:
         if len(projectPath) != 0:
@@ -28,13 +31,17 @@ def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
             project.read(projectPath)
             logger.info(f'QGIS read project {project.fileName()}')
     except Exception as e:
+        qgs.exitQgis()
+        qgs.exit()
         logger.error(f'QGIS read project error at {projectPath}: {e}')
+        return ''
 
     try:
         o = processing.run(algorithm, parameters)
     except Exception as e:
         logger.error(f'QGIS run error at {projectPath}: {e}')
-    # qgs.exitQgis()
+    qgs.exitQgis()
+    # qgs.exit()
     return o
 
 
@@ -43,7 +50,7 @@ def export_image(projectPath: str, block_per_tile: int,
                  LAYERS: dict[str, tuple[str]], outputFolder: str) -> None:
     # init QGIS
     sys.path.append('/usr/share/qgis/python/plugins')
-    from PyQt5.QtCore import Qt, QSize
+    from PyQt5.QtCore import QSize
     from qgis.core import (
         QgsApplication, QgsProject, QgsPrintLayout,
         QgsLayoutItemMap, QgsLayoutSize, QgsUnitTypes,
@@ -54,44 +61,48 @@ def export_image(projectPath: str, block_per_tile: int,
         QgsApplication.setPrefixPath("/usr", True)
         qgs = QgsApplication([], False)
         qgs.initQgis()
-        # logger.info(self.qgs.showSettings())
-        from qgis import processing
-        from processing.core.Processing import Processing
-        Processing.initialize()
+        # logger.info(qgs.showSettings())
+        # from qgis import processing
+        # from processing.core.Processing import Processing
+        # Processing.initialize()
     except Exception as e:
+        qgs.exitQgis()
+        # qgs.exit()
         logger.error(f'QGIS init error at {projectPath} {tile}: {e}')
+        return
 
     try:
-        if len(projectPath) != 0:
-            project = QgsProject.instance()
-            project.read(projectPath)
-            logger.info(f'QGIS read project {project.fileName()}')
+        project = QgsProject.instance()
+        project.read(projectPath)
+        logger.info(f'QGIS read project {project.fileName()} {tile}')
     except Exception as e:
+        qgs.exitQgis()
+        # qgs.exit()
         logger.error(f'QGIS read project error at {projectPath} {tile}: {e}')
+        return
 
-    def uncheckAllLayers():
+    def uncheckAllLayers(project):
         alllayers = []
-        for alllayer in QgsProject.instance().mapLayers().values():
+        for alllayer in project.mapLayers().values():
             alllayers.append(alllayer)
-        root = QgsProject.instance().layerTreeRoot()
+        root = project.layerTreeRoot()
         for alllayer in alllayers:
             node = root.findLayer(alllayer.id())
-            node.setItemVisibilityChecked(Qt.Unchecked)
+            node.setItemVisibilityChecked(False)
 
-    def selectNodes(Layers: tuple[str]):
+    def selectNodes(project, Layers: tuple[str]):
         # get all layers in the project and dis select
         layers = []
-        for layer in QgsProject.instance().mapLayers().values():
+        for layer in project.mapLayers().values():
             for LayerName in Layers:
                 if layer.name().startswith(LayerName):
                     layers.append(layer)
-        root = QgsProject.instance().layerTreeRoot()
+        root = project.layerTreeRoot()
         for layer in layers:
             node = root.findLayer(layer.id())
-            node.setItemVisibilityChecked(Qt.Checked)
+            node.setItemVisibilityChecked(True)
 
-    def export_image(layerOutputName: str):
-        project = QgsProject().instance()
+    def export_image(project, outputName: str):
         layout = QgsPrintLayout(project)
         layout.initializeDefaults()
 
@@ -120,25 +131,30 @@ def export_image(projectPath: str, block_per_tile: int,
         context.setFlag(context.FlagAntialiasing, False)
         settings.flags = context.flags()
 
-        # create image
-        if len(layerOutputName) == 0:
-            outputName = os.path.join(outputFolder,  f'{tile}.png')
-        else:
-            outputName = os.path.join(
-                outputFolder,  f'{tile}_{layerOutputName}.png')
         ret = exporter.exportToImage(outputName, settings)
         if ret != 0:
-            logger.error(f"exportToImage {tile} error: {ret}")
+            logger.error(
+                f"exportToImage {os.path.basename(outputName)} error: {ret}")
         assert ret == 0
-        logger.info(f"{tile}_{layerOutputName} generated")
+        logger.info(f"{os.path.basename(outputName)} generated")
 
     try:
-        uncheckAllLayers()
+        uncheckAllLayers(project)
         for layerOutputName, Layers in LAYERS.items():
-            selectNodes(Layers)
-            export_image(layerOutputName)
-            uncheckAllLayers()
+            if len(layerOutputName) == 0:
+                outputName = os.path.join(outputFolder,  f'{tile}.png')
+            else:
+                outputName = os.path.join(
+                    outputFolder,  f'{tile}_{layerOutputName}.png')
+            if os.path.exists(outputName):
+                logger.info(f"Skipping {os.path.basename(outputName)}")
+                continue
+            selectNodes(project, Layers)
+            export_image(project, outputName)
+            uncheckAllLayers(project)
     except Exception as e:
         logger.error(f'QGIS export image error at {projectPath} {tile}: {e}')
     # exit QGIS
-    # qgs.exitQgis()
+    del project
+    qgs.exitQgis()
+    # qgs.exit()

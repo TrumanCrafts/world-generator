@@ -98,6 +98,7 @@ def imageExportTile(pool, blocks_per_tile: int,
     yMax = yMin + degree_per_tile
 
     tile = calculateTiles(xMin, yMax)
+    all_generated = True
 
     tiles_folder = os.path.join(image_output_folder, f'{tile}/')
     if not os.path.exists(tiles_folder):
@@ -107,16 +108,19 @@ def imageExportTile(pool, blocks_per_tile: int,
     all_output_files_exist = all(os.path.exists(os.path.join(
         tiles_folder, f"{tile}_{name}.png")) for name in LAYER_NAMES)
     if not all_output_files_exist:
+        all_generated = False
         pool.apply_async(export_image,
-                         (CONFIG['qgis_project_path'], blocks_per_tile,
+                         (CONFIG['qgis_project_path'],
+                          blocks_per_tile,
                           xMin, xMax, yMin, yMax, tile,
                           LAYER_NAMES, tiles_folder))
     else:
         logger.info(f"Skipping qgis_project_path of {tile}")
     all_output_files_exist = all(os.path.exists(os.path.join(
         tiles_folder, f"{tile}_{name}.png")
-        ) for name in BATHYMETRY_LAYER_NAMES)
+    ) for name in BATHYMETRY_LAYER_NAMES)
     if not all_output_files_exist:
+        all_generated = False
         pool.apply_async(export_image,
                          (CONFIG['qgis_bathymetry_project_path'],
                           blocks_per_tile, xMin, xMax, yMin, yMax, tile,
@@ -125,8 +129,9 @@ def imageExportTile(pool, blocks_per_tile: int,
         logger.info(f"Skipping qgis_bathymetry_project_path of {tile}")
     all_output_files_exist = all(os.path.exists(os.path.join(
         tiles_folder, f"{tile}_{name}.png")
-        ) for name in TERRAIN_LAYER_NAMES)
+    ) for name in TERRAIN_LAYER_NAMES)
     if not all_output_files_exist:
+        all_generated = False
         pool.apply_async(export_image,
                          (CONFIG['qgis_terrain_project_path'],
                           blocks_per_tile, xMin, xMax, yMin, yMax, tile,
@@ -136,6 +141,7 @@ def imageExportTile(pool, blocks_per_tile: int,
     all_output_files_exist = os.path.exists(os.path.join(
         tiles_folder, f"{tile}.png"))
     if not all_output_files_exist:
+        all_generated = False
         pool.apply_async(export_image,
                          (CONFIG['qgis_heightmap_project_path'],
                           blocks_per_tile, xMin, xMax, yMin, yMax, tile,
@@ -149,11 +155,15 @@ def imageExportTile(pool, blocks_per_tile: int,
     all_output_files_exist = os.path.exists(os.path.join(
         heightmap_output_folder, f"{tile}_exported.png"))
     if not all_output_files_exist:
-        pool.apply_async(gdal_translate, (heightmap_output_folder, tile,
-                                          blocks_per_tile, xMin, xMax,
-                                          yMin, yMax))
+        all_generated = False
+        pool.apply_async(gdal_translate,
+                         (heightmap_output_folder, tile,
+                          blocks_per_tile, xMin, xMax,
+                          yMin, yMax))
     else:
         logger.info(f"Skipping gdal_translate of {tile}")
+
+    return all_generated
 
 
 def imageExport():
@@ -165,13 +175,18 @@ def imageExport():
     degree_per_tile = 2
     blocks_per_tile = 512
     # x -180 ~ 180  y -90 ~ 90
-    logger.info("image export...")
-    pool = multiprocessing.Pool(processes=CONFIG['threads'])
-    for xMin in range(-180, 180, degree_per_tile):
-        for yMin in range(-90, 90, degree_per_tile):
-            imageExportTile(pool, blocks_per_tile, degree_per_tile,
-                            xMin, yMin)
-    pool.close()
-    pool.join()
+    all_generated = False
+    while not all_generated:
+        all_generated = True
+        logger.info("image export...")
+        pool = multiprocessing.Pool(processes=CONFIG['threads'])
+        for xMin in range(-180, 180, degree_per_tile):
+            for yMin in range(-90, 90, degree_per_tile):
+                g = imageExportTile(
+                    pool, blocks_per_tile, degree_per_tile, xMin, yMin)
+                if not g:
+                    all_generated = False
+        pool.close()
+        pool.join()
     logger.info("image export done")
     # examine the output make sure all the tiles are generated
