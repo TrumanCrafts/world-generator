@@ -1,6 +1,8 @@
 import os
 import sys
 
+from config import CONFIG
+from tools import calculateTiles
 from logger import configure_logger
 
 logger = configure_logger("qgiscontroller")
@@ -46,8 +48,9 @@ def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
 
 
 def export_image(projectPath: str, block_per_tile: int,
-                 xMin: float, xMax: float, yMin: float, yMax: float, tile: str,
-                 LAYERS: dict[str, tuple[str]], outputFolder: str) -> None:
+                 degree_per_tile: int,
+                 xRangeMin: int, xRangeMax: int, yRangeMin: int,
+                 yRangeMax: int, LAYERS: dict[str, tuple[str]]) -> None:
     # init QGIS
     sys.path.append('/usr/share/qgis/python/plugins')
     from PyQt5.QtCore import QSize
@@ -68,17 +71,17 @@ def export_image(projectPath: str, block_per_tile: int,
     except Exception as e:
         qgs.exitQgis()
         # qgs.exit()
-        logger.error(f'QGIS init error at {projectPath} {tile}: {e}')
+        logger.error(f'QGIS init error at {projectPath}: {e}')
         return
 
     try:
         project = QgsProject.instance()
         project.read(projectPath)
-        logger.info(f'QGIS read project {project.fileName()} {tile}')
+        logger.info(f'QGIS read project {project.fileName()}')
     except Exception as e:
         qgs.exitQgis()
         # qgs.exit()
-        logger.error(f'QGIS read project error at {projectPath} {tile}: {e}')
+        logger.error(f'QGIS read project error at {projectPath}: {e}')
         return
 
     def uncheckAllLayers(project):
@@ -102,7 +105,8 @@ def export_image(projectPath: str, block_per_tile: int,
             node = root.findLayer(layer.id())
             node.setItemVisibilityChecked(True)
 
-    def export_image(project, outputName: str):
+    def _export_image(project, outputName: str, xMin: float, xMax: float,
+                      yMin: float, yMax: float):
         layout = QgsPrintLayout(project)
         layout.initializeDefaults()
 
@@ -138,19 +142,30 @@ def export_image(projectPath: str, block_per_tile: int,
         assert ret == 0
         logger.info(f"{os.path.basename(outputName)} generated")
 
+    image_output_folder = os.path.join(
+        CONFIG['scripts_folder_path'], 'image_exports/')
     try:
         uncheckAllLayers(project)
         for layerOutputName, Layers in LAYERS.items():
-            if len(layerOutputName) == 0:
-                outputName = os.path.join(outputFolder,  f'{tile}.png')
-            else:
-                outputName = os.path.join(
-                    outputFolder,  f'{tile}_{layerOutputName}.png')
-            if os.path.exists(outputName):
-                logger.info(f"Skipping {os.path.basename(outputName)}")
-                continue
             selectNodes(project, Layers)
-            export_image(project, outputName)
+            for xMin in range(xRangeMin, xRangeMax, degree_per_tile):
+                for yMin in range(yRangeMin, yRangeMax, degree_per_tile):
+                    xMax = xMin + degree_per_tile
+                    yMax = yMin + degree_per_tile
+                    tile = calculateTiles(xMin, yMax)
+                    outputFolder = os.path.join(
+                        image_output_folder, f'{tile}/')
+                    if not os.path.exists(outputFolder):
+                        os.makedirs(outputFolder)
+                    if len(layerOutputName) == 0:
+                        outputName = os.path.join(outputFolder,  f'{tile}.png')
+                    else:
+                        outputName = os.path.join(
+                            outputFolder,  f'{tile}_{layerOutputName}.png')
+                    if os.path.exists(outputName):
+                        logger.info(f"Skipping {os.path.basename(outputName)}")
+                        continue
+                    _export_image(project, outputName, xMin, xMax, yMin, yMax)
             uncheckAllLayers(project)
     except Exception as e:
         logger.error(f'QGIS export image error at {projectPath} {tile}: {e}')
