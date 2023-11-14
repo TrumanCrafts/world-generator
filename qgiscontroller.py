@@ -50,7 +50,8 @@ def fix_geometry(projectPath: str,  algorithm: str, parameters: dict) -> str:
 def export_image(projectPath: str, block_per_tile: int,
                  degree_per_tile: int,
                  xRangeMin: int, xRangeMax: int, yRangeMin: int,
-                 yRangeMax: int, LAYERS: dict[str, tuple[str]]) -> None:
+                 yRangeMax: int, layerOutputName: str,
+                 Layers: tuple[str]) -> None:
     # init QGIS
     sys.path.append('/usr/share/qgis/python/plugins')
     from PyQt5.QtCore import QSize
@@ -141,32 +142,39 @@ def export_image(projectPath: str, block_per_tile: int,
                 f"exportToImage {os.path.basename(outputName)} error: {ret}")
         assert ret == 0
         logger.info(f"{os.path.basename(outputName)} generated")
+        # clean up
+        del settings
+        del exporter
+        del context
+        layout.removeLayoutItem(map)
+        del map
+        del pages
+        del layout
 
     image_output_folder = os.path.join(
         CONFIG['scripts_folder_path'], 'image_exports/')
     try:
         uncheckAllLayers(project)
-        for layerOutputName, Layers in LAYERS.items():
-            selectNodes(project, Layers)
-            for xMin in range(xRangeMin, xRangeMax, degree_per_tile):
-                for yMin in range(yRangeMin, yRangeMax, degree_per_tile):
-                    xMax = xMin + degree_per_tile
-                    yMax = yMin + degree_per_tile
-                    tile = calculateTiles(xMin, yMax)
-                    outputFolder = os.path.join(
-                        image_output_folder, f'{tile}/')
-                    if not os.path.exists(outputFolder):
-                        os.makedirs(outputFolder)
-                    if len(layerOutputName) == 0:
-                        outputName = os.path.join(outputFolder,  f'{tile}.png')
-                    else:
-                        outputName = os.path.join(
-                            outputFolder,  f'{tile}_{layerOutputName}.png')
-                    if os.path.exists(outputName):
-                        logger.info(f"Skipping {os.path.basename(outputName)}")
-                        continue
-                    _export_image(project, outputName, xMin, xMax, yMin, yMax)
-            uncheckAllLayers(project)
+        selectNodes(project, Layers)
+        for xMin in range(xRangeMin, xRangeMax, degree_per_tile):
+            for yMin in range(yRangeMin, yRangeMax, degree_per_tile):
+                xMax = xMin + degree_per_tile
+                yMax = yMin + degree_per_tile
+                tile = calculateTiles(xMin, yMax)
+                outputFolder = os.path.join(
+                    image_output_folder, f'{tile}/')
+                if not os.path.exists(outputFolder):
+                    os.makedirs(outputFolder)
+                if len(layerOutputName) == 0:
+                    outputName = os.path.join(outputFolder,  f'{tile}.png')
+                else:
+                    outputName = os.path.join(
+                        outputFolder,  f'{tile}_{layerOutputName}.png')
+                if os.path.exists(outputName):
+                    logger.info(f"Skipping {os.path.basename(outputName)}")
+                    continue
+                _export_image(project, outputName, xMin, xMax, yMin, yMax)
+        uncheckAllLayers(project)
     except Exception as e:
         logger.error(f'QGIS export image error at {projectPath} {tile}: {e}')
     # exit QGIS

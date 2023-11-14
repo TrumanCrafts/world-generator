@@ -115,53 +115,58 @@ def imageExport():
     xMaxList[-1] = 180
 
     # qgis, divide to reduce swap
-    pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
-                              context=mp.get_context('forkserver'))
-    for i in range(CONFIG["threads"]):
-        xMin = xMinList[i]
-        xMax = xMaxList[i]
-        pool.schedule(
-            export_image, (CONFIG['qgis_project_path'],
-                           blocks_per_tile, degree_per_tile,
-                           xMin, xMax, -90, 90, LAYER_NAMES))
-    pool.close()
-    pool.join()
+    for layerOutputName, Layers in LAYER_NAMES.items():
+        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                                  context=mp.get_context('forkserver'))
+        for i in range(CONFIG["threads"]):
+            xMin = xMinList[i]
+            xMax = xMaxList[i]
+            pool.schedule(
+                export_image, (CONFIG['qgis_project_path'],
+                               blocks_per_tile, degree_per_tile,
+                               xMin, xMax, -90, 90, layerOutputName, Layers))
+        pool.close()
+        pool.join()
 
-    pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
-                              context=mp.get_context('forkserver'))
-    for i in range(CONFIG["threads"]):
-        xMin = xMinList[i]
-        xMax = xMaxList[i]
-        pool.schedule(
-            export_image, (CONFIG['qgis_bathymetry_project_path'],
-                           blocks_per_tile, degree_per_tile,
-                           xMin, xMax, -90, 90, BATHYMETRY_LAYER_NAMES))
-    pool.close()
-    pool.join()
+    for layerOutputName, Layers in BATHYMETRY_LAYER_NAMES.items():
+        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                                  context=mp.get_context('forkserver'))
+        for i in range(CONFIG["threads"]):
+            xMin = xMinList[i]
+            xMax = xMaxList[i]
+            pool.schedule(
+                export_image, (CONFIG['qgis_bathymetry_project_path'],
+                               blocks_per_tile, degree_per_tile,
+                               xMin, xMax, -90, 90, layerOutputName, Layers))
+        pool.close()
+        pool.join()
 
-    pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
-                              context=mp.get_context('forkserver'))
-    for i in range(CONFIG["threads"]):
-        xMin = xMinList[i]
-        xMax = xMaxList[i]
-        pool.schedule(
-            export_image, (CONFIG['qgis_terrain_project_path'],
-                           blocks_per_tile, degree_per_tile,
-                           xMin, xMax, -90, 90, TERRAIN_LAYER_NAMES))
-    pool.close()
-    pool.join()
+    for layerOutputName, Layers in TERRAIN_LAYER_NAMES.items():
+        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                                  context=mp.get_context('forkserver'))
+        for i in range(CONFIG["threads"]):
+            xMin = xMinList[i]
+            xMax = xMaxList[i]
+            pool.schedule(
+                export_image, (CONFIG['qgis_terrain_project_path'],
+                               blocks_per_tile, degree_per_tile,
+                               xMin, xMax, -90, 90, layerOutputName, Layers))
+        pool.close()
+        pool.join()
 
-    pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
-                              context=mp.get_context('forkserver'))
-    for i in range(CONFIG["threads"]):
-        xMin = xMinList[i]
-        xMax = xMaxList[i]
-        pool.schedule(
-            export_image, (CONFIG['qgis_heightmap_project_path'],
-                           blocks_per_tile, degree_per_tile,
-                           xMin, xMax, -90, 90, HEIGHT_LAYER_NAMES))
-    pool.close()
-    pool.join()
+    for layerOutputName, Layers in HEIGHT_LAYER_NAMES.items():
+        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                                  context=mp.get_context('forkserver'))
+        for i in range(CONFIG["threads"]):
+            xMin = xMinList[i]
+            xMax = xMaxList[i]
+            pool.schedule(
+                export_image, (CONFIG['qgis_heightmap_project_path'],
+                               blocks_per_tile, degree_per_tile,
+                               xMin, xMax, -90, 90, layerOutputName, Layers))
+        pool.close()
+        pool.join()
+
     logger.info("image export done")
 
     # gdal
