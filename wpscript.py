@@ -1,4 +1,5 @@
-import multiprocessing
+import pebble
+import multiprocessing as mp
 import subprocess
 import os
 from config import CONFIG
@@ -63,8 +64,8 @@ def runWorldPainter(tile: str, degree_per_tile: int,
         "True", "False", "False", "False", "False", "False", "False", "True",
         "True", "True", "True", "False", "True", "True", "True", "False",
         "True", "True", "True", "1-19", "0", "-64", "2032", "True",
-        tile, "ecoregions", "8" "False", "False", "False", "False", "False"],
-        capture_output=True, text=True, env=os.environ.copy())
+        tile, "ecoregions", "8", "False", "False", "False", "False", "False"],
+        capture_output=True, text=True)
     logger.info(f"WorldPainter for {tile} output: {o.stdout}")
     logger.error(f"WorldPainter for {tile} error: {o.stderr}")
     o = subprocess.run([
@@ -84,12 +85,13 @@ def wpGenerate():
     degree_per_tile = 2
     blocks_per_tile = 512
     height_ratio = 30
-    os.environ["WorldName"] = CONFIG["world_name"]
-    pool = multiprocessing.Pool(processes=CONFIG['threads'])
+    # os.environ["WorldName"] = CONFIG["world_name"]
+    pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                              context=mp.get_context('forkserver'))
     for xMin in range(-180, 180, degree_per_tile):
         for yMin in range(-90, 90, degree_per_tile):
             tile = calculateTiles(xMin, yMin + degree_per_tile)
-            pool.apply_async(
+            pool.schedule(
                 runWorldPainter,
                 (tile, degree_per_tile, blocks_per_tile, height_ratio))
     pool.close()

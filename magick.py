@@ -130,7 +130,7 @@ def runMagick(tile: str, blocks_per_tile: int):
     o = subprocess.run([
         "convert",
         os.path.join(tile_folder, "heightmap", f"{tile}_unsmoothed.png"),
-        os.path.join(tile_folder, "heightmap",
+        os.path.join(tile_folder,
                      f"{tile}_water_transparent.png"),
         "-compose", "over", "-composite", "-depth", "16",
         os.path.join(tile_folder, "heightmap", f"{tile}_water_blacked.png")
@@ -153,7 +153,7 @@ def runMagick(tile: str, blocks_per_tile: int):
     ], capture_output=True, text=True)
     std_out += o.stdout
     std_err += o.stderr
-    cond = f'( +clone -channel A -morphology EdgeIn Diamond +channel +write sparse-color:"{os.path.join(tile_folder,"heightmap", f"{tile}vf.txt")}" -sparse-color Voronoi "@{os.path.join(tile_folder, "heightmap",f"{tile}vf.txt")}"  -alpha off -depth 16 )'.split()
+    cond = f'( +clone -channel A -morphology EdgeIn Diamond +channel +write sparse-color:{os.path.join(tile_folder,"heightmap", f"{tile}vf.txt")} -sparse-color Voronoi @{os.path.join(tile_folder, "heightmap",f"{tile}vf.txt")}  -alpha off -depth 16 )'.split()
     o = subprocess.run([
         "convert",
         os.path.join(tile_folder, "heightmap", f"{tile}_water_edges.png"),
