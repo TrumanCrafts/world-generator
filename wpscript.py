@@ -96,4 +96,4 @@ def wpGenerate():
                 (tile, degree_per_tile, blocks_per_tile, height_ratio))
     pool.close()
     pool.join()
-    logger.info(f"All magickConvert {tile} done")
+    logger.info("All magickConvert done")

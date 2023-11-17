@@ -47,29 +47,34 @@ def postProcessMap():
         CONFIG['scripts_folder_path'], CONFIG["world_name"])
     if not os.path.exists(final_path):
         os.makedirs(final_path)
-    region = os.path.join(final_path, 'region')
-    if not os.path.exists(region):
-        os.makedirs(region)
+    final_region_path = os.path.join(final_path, 'region')
+    if not os.path.exists(final_region_path):
+        os.makedirs(final_region_path)
 
-    wp_folder = os.path.join(
-            CONFIG['scripts_folder_path'], 'wpscript', 'exports',
-            CONFIG["world_name"])
+    wp_export_folder = os.path.join(
+        CONFIG['scripts_folder_path'], 'wpscript', 'exports')
 
-    # copy the level.dat file
-    shutil.copy2(os.path.join(wp_folder, 'level.dat'), final_path)
-    # copy the session.lock file
-    shutil.copy2(os.path.join(wp_folder, 'session.lock'), final_path)
-    # copy the region files
-    for file_name in os.listdir(wp_folder, 'region'):
-        src_file = os.path.join(wp_folder, 'region', file_name)
-        dest_file = os.path.join(final_path, 'region', file_name)
-        shutil.copy2(src_file, dest_file)
+    Nodat = True
+    for tile_folder in os.listdir(wp_export_folder):
+        # copy if first time
+        if Nodat:
+            shutil.copy2(os.path.join(wp_export_folder,
+                                      tile_folder, 'session.lock'), final_path)
+            shutil.copy2(os.path.join(wp_export_folder,
+                                      tile_folder, 'level.dat'), final_path)
+            Nodat = False
+        for file_name in os.listdir(os.path.join(
+                wp_export_folder, tile_folder, 'region')):
+            src_file = os.path.join(
+                wp_export_folder, tile_folder, 'region', file_name)
+            dest_file = os.path.join(final_region_path, file_name)
+            shutil.copy2(src_file, dest_file)
     logger.info("merging all the files done")
     # run minutor to generate the png
     logger.info("running minutor...")
     o = subprocess.run([
         "minutor", "--world",
-        wp_folder, "--depth", "319", "--savepng",
+        final_path, "--depth", "319", "--savepng",
         os.path.join(final_path, CONFIG["world_name"] + ".png")],
         capture_output=True, text=True
     )
