@@ -4,7 +4,7 @@ The World Generator inspired by [Minecraft Earth Map](https://earth.motfe.net/) 
 
 ## Requirements
 
-Ubuntu 22.04 LTS, run the following command to install the dependencies.
+Ubuntu 22.04 LTS, run the following command to install the dependencies. Later Docker image will be provided.
 
 ```bash
 sudo apt install -y \
