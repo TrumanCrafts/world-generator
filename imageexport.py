@@ -26,15 +26,15 @@ TERRAIN_LAYER_NAMES: dict[str, tuple[str]] = {
 
 LAYER_NAMES: dict[str, tuple[str]] = {
     # output: (layer1, layer2, ...)
+    # 'terrain': ('backupterrain',),
     'slope': ('slope',),
     # 'bathymetry': (
     #     'land_polygons', 'bathymetry_source', 'background_bathymetry',),
     'landuse': ('landuse',),
     'water': ('water',),
-    'river': ('rivers_medium',),  # TODO: need to be adjusted
+    'river': (CONFIG["rivers"],),  # TODO: need to be adjusted
     'wet': ('wet_glacier', 'wet_swamp',),
     'road': ('road',),
-    # 'terrain': ('backupterrain',),
     'climate': ('climate',),
     'ecoregions': ('wwf_terr_ecos',),
     'pine': ('EvergreenDeciduousNeedleleafTrees', 'vegetation_background',),
@@ -67,6 +67,8 @@ ores = ['aluiminum', 'antimony', 'barite', 'chromium', 'clay', 'coal',
 ore_dict = {ore: (ore + '_ores',) for ore in ores}
 LAYER_NAMES.update(ore_dict)
 
+if not CONFIG["use_heigh_quality_terrain"]:
+    LAYER_NAMES['terrain'] = ('backupterrain',)
 
 heightmap_input_name = os.path.join(
     os.path.dirname(CONFIG['qgis_heightmap_project_path']),
@@ -100,9 +102,8 @@ def imageExport():
     if not os.path.exists(image_output_folder):
         os.makedirs(image_output_folder)
 
-    # TODO: adjust Degree per Tile / Blocks per Tile
-    degree_per_tile = 2
-    blocks_per_tile = 512
+    degree_per_tile = CONFIG["degree_per_tile"]
+    blocks_per_tile = CONFIG["blocks_per_tile"]
     # x -180 ~ 180  y -90 ~ 90
     logger.info("image export...")
 
@@ -113,6 +114,22 @@ def imageExport():
     xMaxList = [int(-180 + xRangePerThread * (i + 1))
                 for i in range(CONFIG["threads"])]
     xMaxList[-1] = 180
+
+    if CONFIG["use_heigh_quality_terrain"]:
+        for layerOutputName, Layers in TERRAIN_LAYER_NAMES.items():
+            pool = pebble.ProcessPool(max_workers=CONFIG["threads"],
+                                      max_tasks=1,
+                                      context=mp.get_context('forkserver'))
+            for i in range(CONFIG["threads"]):
+                xMin = xMinList[i]
+                xMax = xMaxList[i]
+                pool.schedule(
+                    export_image, (CONFIG['qgis_terrain_project_path'],
+                                   blocks_per_tile, degree_per_tile,
+                                   xMin, xMax, -90, 90, layerOutputName,
+                                   Layers))
+            pool.close()
+            pool.join()
 
     # qgis, divide to reduce swap
     for layerOutputName, Layers in LAYER_NAMES.items():
@@ -136,19 +153,6 @@ def imageExport():
             xMax = xMaxList[i]
             pool.schedule(
                 export_image, (CONFIG['qgis_bathymetry_project_path'],
-                               blocks_per_tile, degree_per_tile,
-                               xMin, xMax, -90, 90, layerOutputName, Layers))
-        pool.close()
-        pool.join()
-
-    for layerOutputName, Layers in TERRAIN_LAYER_NAMES.items():
-        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
-                                  context=mp.get_context('forkserver'))
-        for i in range(CONFIG["threads"]):
-            xMin = xMinList[i]
-            xMax = xMaxList[i]
-            pool.schedule(
-                export_image, (CONFIG['qgis_terrain_project_path'],
                                blocks_per_tile, degree_per_tile,
                                xMin, xMax, -90, 90, layerOutputName, Layers))
         pool.close()

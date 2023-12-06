@@ -1,0 +1,38 @@
+pbf_path: "/workspace/Data/planet-latest.osm.pbf"
+osm_folder_path: "/workspace/Data/osm/"
+qgis_project_path: "/workspace/Data/qgis-project/QGIS/MinecraftEarthTiles.qgz"
+scripts_folder_path: "/workspace/Data/"
+qgis_bathymetry_project_path: "/workspace/Data/qgis-bathymetry/QGIS/MinecraftEarthTiles_Bathymetry.qgz"
+qgis_terrain_project_path: "/workspace/Data/qgis-terrain/QGIS/MinecraftEarthTiles_Terrain.qgz"
+qgis_heightmap_project_path: "/workspace/Data/qgis-heightmap/QGIS/MinecraftEarthTiles_Heightmap.qgz"
+use_heigh_quality_terrain: false
+world_name: Your_World_Name
+blocks_per_tile: 512
+degree_per_tile: 2
+height_ratio: 50
+threads: 20
+osm_switch:
+  aerodrome: false
+  bare_rock: true
+  beach: true
+  big_road: false
+  border: true
+  farmland: true
+  forest: true
+  glacier: true
+  grass: true
+  highway: false
+  meadow: true
+  middle_road: false
+  quarry: true
+  river: true
+  small_road: false
+  stateborder: false
+  stream: false
+  swamp: true
+  urban: false
+  volcano: true
+  water: true
+  wetland: true
+  vineyard: true
+rivers: rivers_small # rivers_small rivers_medium rivers_large  MajorRiversMany MajorRiversFew

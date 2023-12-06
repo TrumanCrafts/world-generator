@@ -56,7 +56,14 @@ def runWorldPainter(tile: str, degree_per_tile: int,
     #     var mod_williamWythers = arguments[38];
     #     var mod_Create = arguments[39];
     logger.info(f"WorldPainter for {tile}...")
-    # TODO: How does WorldPainter get WorldName?
+
+    # skip if already done
+    if os.path.exists(os.path.join(CONFIG["scripts_folder_path"],
+                                   "wpscript", "worldpainter_files",
+                                   f"{tile}.world")):
+        logger.info(f"Skipping WorldPainter for {tile}")
+        return
+
     o = subprocess.run([
         "wpscript", scriptjs, CONFIG["scripts_folder_path"],
         tile[0:1], str(int(tile[1:3])), tile[3:4], str(int(tile[4:7])),
@@ -82,9 +89,9 @@ def runWorldPainter(tile: str, degree_per_tile: int,
 
 
 def wpGenerate():
-    degree_per_tile = 2
-    blocks_per_tile = 512
-    height_ratio = 30
+    degree_per_tile = CONFIG["degree_per_tile"]
+    blocks_per_tile = CONFIG["blocks_per_tile"]
+    height_ratio = CONFIG["height_ratio"]
     # os.environ["WorldName"] = CONFIG["world_name"]
     pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
                               context=mp.get_context('forkserver'))
@@ -96,4 +103,4 @@ def wpGenerate():
                 (tile, degree_per_tile, blocks_per_tile, height_ratio))
     pool.close()
     pool.join()
-    logger.info("All magickConvert done")
+    logger.info("All wpGenerate done")

@@ -21,6 +21,12 @@ def runMagick(tile: str, blocks_per_tile: int):
     if not os.path.exists(tile_folder):
         os.makedirs(tile_folder)
 
+    # skip if already done
+    if os.path.exists(os.path.join(tile_folder,
+                                   f"{tile}_terrain_reduced_colors.png")):
+        logger.info(f"Skipping Magick for {tile}")
+        return
+
     o = subprocess.run([
         "convert", os.path.join(tile_folder, f"{tile}_water.png"),
         os.path.join(tile_folder, f"{tile}_water_temp.png")
@@ -219,8 +225,8 @@ def runMagick(tile: str, blocks_per_tile: int):
 
 
 def magickConvert():
-    degree_per_tile = 2
-    blocks_per_tile = 512
+    degree_per_tile = CONFIG["degree_per_tile"]
+    blocks_per_tile = CONFIG["blocks_per_tile"]
     pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
                               context=mp.get_context('forkserver'))
     for xMin in range(-180, 180, degree_per_tile):

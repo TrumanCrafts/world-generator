@@ -26,6 +26,12 @@ def copyOSMFiles():
         src_file = os.path.join(src_dir, file_name)
         dest_file = os.path.join(dest_dir, file_name)
 
+        name = file_name.split(".")[0]
+        if not CONFIG["osm_switch"][name]:
+            logger.info(f"Skipping {file_name}, change source to empty")
+            src_file = os.path.join(
+                os.path.dirname(CONFIG['qgis_project_path']), "empty.osm")
+
         if os.path.exists(dest_file):
             logger.info(f"Skipping {file_name} as it already exists")
             continue

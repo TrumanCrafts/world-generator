@@ -47,7 +47,7 @@ RUN apt update && apt install -y \
     # post cleanup
     && apt clean \
     # pip install osmium
-    && pip install osmium pebble --break-system-packages \
+    && pip install osmium pebble pyyaml --break-system-packages \
     && rm -rf /root/.cache/pip \
     && rm -rf /var/lib/apt/lists/* \
     # remove Imagemagick policy

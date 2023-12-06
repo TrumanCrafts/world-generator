@@ -1,6 +1,8 @@
 import osmium
 import os
-import multiprocessing
+import pebble
+import multiprocessing as mp
+
 from logger import configure_logger
 
 from qgiscontroller import fix_geometry
@@ -190,9 +192,10 @@ def preprocessOSM():
     all_output_files_exist = all(os.path.exists(os.path.join(
         output_folder, f"{name}.shp")) for name in OSM_POSTFIX)
     if not all_output_files_exist:
-        pool = multiprocessing.Pool(processes=CONFIG['threads'])
+        pool = pebble.ProcessPool(max_workers=CONFIG["threads"], max_tasks=1,
+                                  context=mp.get_context('forkserver'))
         for output_name in OSM_POSTFIX:
-            pool.apply_async(QGISfix, args=(output_name,))
+            pool.schedule(QGISfix, (output_name,))
         pool.close()
         pool.join()
         logger.info("QGIS fix geometries done")
