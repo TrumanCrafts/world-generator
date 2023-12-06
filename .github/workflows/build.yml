@@ -2,12 +2,8 @@ name: Build Docker Image
 
 # on dispatch
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag'
-        required: false
-        default: 'latest'
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -31,4 +27,4 @@ jobs:
       with:
         context: ./Docker
         push: true
-        tags: alicespaceli/trumancrafts_builder:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/trumancrafts_builder:${{ github.ref }}
