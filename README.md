@@ -10,6 +10,8 @@ The World Generator inspired by [Minecraft Earth Map](https://earth.motfe.net/) 
 3. Run the following command in the project root directory.
 
 ```bash
-docker pull alicespaceli/trumancrafts_builder
-docker run --rm -v $(pwd):/workspace alicespaceli/trumancrafts_builder
+docker pull alicespaceli/trumancrafts_builder:v0.0.3
+docker run -idt --rm -v $(pwd):/workspace alicespaceli/trumancrafts_builder:v0.0.3
 ```
+
+You can check the progress by just looking into the `generator.log`.
