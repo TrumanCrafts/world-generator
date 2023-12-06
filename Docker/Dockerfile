@@ -36,6 +36,8 @@ RUN apt update && apt install -y \
     && dpkg -i /tmp/worldpainter_2.21.0.deb \
     && rm /tmp/worldpainter_2.21.0.deb \
     && mkdir -p /root/.local/share/worldpainter/ \
+    ## change worldpainter config
+    && sed -i 's/# -Xmx512m/-Xmx6G/g' /opt/worldpainter/wpscript.vmoptions \
     # install Minutor
     && wget -O /tmp/Minutor.Ubuntu-22.04.zip https://github.com/mrkite/minutor/releases/download/2.20.0/Minutor.Ubuntu-22.04.zip \
     && unzip /tmp/Minutor.Ubuntu-22.04.zip \
@@ -47,8 +49,15 @@ RUN apt update && apt install -y \
     # pip install osmium
     && pip install osmium --break-system-packages \
     && rm -rf /root/.cache/pip \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # remove Imagemagick policy
+    && rm /etc/ImageMagick-6/policy.xml \
+    # setup work space
+    && mkdir -p /workspace
 
 COPY config /root/.local/share/worldpainter/config
+COPY policy.xml /etc/ImageMagick-6/policy.xml
+
+WORKDIR /workspace
 
 CMD [ "bash" ]
