@@ -27,4 +27,4 @@ jobs:
       with:
         context: ./Docker
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/trumancrafts_builder:${{ github.ref }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/trumancrafts_builder:${{ github.ref_name }}
