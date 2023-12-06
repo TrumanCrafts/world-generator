@@ -54,15 +54,7 @@ def postProcessMap():
     wp_export_folder = os.path.join(
         CONFIG['scripts_folder_path'], 'wpscript', 'exports')
 
-    Nodat = True
     for tile_folder in os.listdir(wp_export_folder):
-        # copy if first time
-        if Nodat:
-            shutil.copy2(os.path.join(wp_export_folder,
-                                      tile_folder, 'session.lock'), final_path)
-            shutil.copy2(os.path.join(wp_export_folder,
-                                      tile_folder, 'level.dat'), final_path)
-            Nodat = False
         for file_name in os.listdir(os.path.join(
                 wp_export_folder, tile_folder, 'region')):
             src_file = os.path.join(
@@ -75,7 +67,8 @@ def postProcessMap():
     o = subprocess.run([
         "minutor", "--world",
         final_path, "--depth", "319", "--savepng",
-        os.path.join(final_path, CONFIG["world_name"] + ".png")],
+        os.path.join(CONFIG['scripts_folder_path'],
+                     CONFIG["world_name"] + ".png")],
         capture_output=True, text=True
     )
     logger.info(f"minutor output: {o.stdout}")
