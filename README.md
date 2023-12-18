@@ -15,3 +15,38 @@ docker run -idt --rm -v $(pwd):/workspace alicespaceli/trumancrafts_builder:v0.0
 ```
 
 You can check the progress by just looking into the `generator.log`.
+
+The folders in the project, all the folder names should be the same as your `config.yaml`
+
+```
+.
+├── Data                 /* `scripts_folder_path` in config, unzip the worldpainter-script.zip here */
+│   ├── voidscript.js
+│   ├── worldpainter-script.zip
+│   ├── wpscript
+│   ├── wpscript.js
+│   ├── osm              /* `osm_folder_path` in config, osm files will be generated here */
+│   │   └── all
+│   ├── qgis-bathymetry  /* unzip the qgis-bathymetry.zip here */
+│   │   └── QGIS
+│   ├── qgis-heightmap   /* unzip the qgis-heightmap.zip.001... here */
+│   │   └── QGIS
+│   ├── qgis-terrain     /* unzip the qgis-terrain.zip here */
+│   │   └── QGIS
+│   ├── qgis-project     /* unzip the qgis-project.zip here */
+│   │   └── QGIS
+│   └── wpscript
+│       ├── backups
+│       ├── exports
+│       ├── farm
+│       ├── layer
+│       ├── ocean
+│       ├── ores
+│       ├── roads
+│       ├── schematics
+│       ├── terrain
+│       └── worldpainter_files
+├── Docker
+
+
+```
